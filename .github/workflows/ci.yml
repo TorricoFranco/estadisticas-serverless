@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Instalar dependencias
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-dev.txt
+          python -m pip install -e . --no-deps
+
+      - name: Lint y formato
+        run: |
+          ruff check src tests infra
+          ruff format --check src tests infra
+
+      - name: Pruebas unitarias, de handlers (moto) e infraestructura
+        run: pytest --cov=estadisticas --cov-report=term-missing
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Sintetizar los stacks de CDK (sin credenciales de AWS)
+        run: |
+          npm install -g aws-cdk@2
+          cdk synth -c github_repo=${{ github.repository }}

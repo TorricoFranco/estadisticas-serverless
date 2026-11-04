@@ -1,0 +1,6 @@
+[
+  {"position": 1, "team_id": "river-plate", "team": "River Plate", "played": 3, "won": 2, "drawn": 0, "lost": 1, "goals_for": 5, "goals_against": 2, "goal_difference": 3, "points": 6},
+  {"position": 2, "team_id": "boca-juniors", "team": "Boca Juniors", "played": 3, "won": 1, "drawn": 1, "lost": 1, "goals_for": 3, "goals_against": 3, "goal_difference": 0, "points": 4},
+  {"position": 3, "team_id": "independiente", "team": "Independiente", "played": 3, "won": 1, "drawn": 1, "lost": 1, "goals_for": 2, "goals_against": 2, "goal_difference": 0, "points": 4},
+  {"position": 4, "team_id": "racing-club", "team": "Racing Club", "played": 3, "won": 0, "drawn": 2, "lost": 1, "goals_for": 0, "goals_against": 3, "goal_difference": -3, "points": 2}
+]

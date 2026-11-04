@@ -1,0 +1,302 @@
+openapi: 3.0.3
+info:
+  title: Estadísticas de fútbol (serverless)
+  version: 0.1.0
+  description: >-
+    API de partidos y tabla de posiciones. Contrato de la sección 8 del ERS.
+    Las rutas no tienen prefijo. Los errores usan el formato {"error": {...}}.
+servers:
+  - url: https://{api_id}.execute-api.us-east-1.amazonaws.com
+    variables:
+      api_id:
+        default: example
+paths:
+  /uploads:
+    post:
+      summary: Pide la URL firmada para subir el CSV de una fecha
+      description: >-
+        Devuelve una URL firmada (presigned POST) de S3 válida 300 segundos. Subir el archivo
+        con multipart/form-data: todos los campos de `upload.fields` primero y `file` al final.
+      security:
+        - awsSigV4: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UploadRequest"
+      responses:
+        "201":
+          description: URL firmada creada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UploadResponse"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "403":
+          description: Falta la firma IAM. La responde API Gateway, sin el formato de error.
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+        "429":
+          $ref: "#/components/responses/DailyQuotaExceeded"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /partidos:
+    get:
+      summary: Lista los partidos de una temporada con el estado de su resumen
+      parameters:
+        - $ref: "#/components/parameters/Competition"
+        - $ref: "#/components/parameters/Season"
+        - $ref: "#/components/parameters/Matchday"
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Cursor"
+      responses:
+        "200":
+          description: Partidos encontrados (puede ser una lista vacía)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MatchesResponse"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /tabla:
+    get:
+      summary: Tabla de posiciones de una temporada
+      parameters:
+        - $ref: "#/components/parameters/Competition"
+        - $ref: "#/components/parameters/Season"
+      responses:
+        "200":
+          description: Tabla ordenada por posición
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StandingsResponse"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "404":
+          $ref: "#/components/responses/SeasonNotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+components:
+  securitySchemes:
+    awsSigV4:
+      type: apiKey
+      name: Authorization
+      in: header
+      description: Firma AWS Signature Version 4 con una identidad IAM que pueda invocar la API.
+  parameters:
+    Competition:
+      name: competition
+      in: query
+      required: true
+      description: Slug de la competición.
+      schema:
+        type: string
+        minLength: 2
+        maxLength: 40
+        pattern: "^[a-z0-9]+(-[a-z0-9]+)*$"
+        example: liga-profesional
+    Season:
+      name: season
+      in: query
+      required: true
+      schema:
+        type: integer
+        minimum: 2000
+        maximum: 2100
+        example: 2026
+    Matchday:
+      name: matchday
+      in: query
+      required: false
+      description: Si viene, devuelve toda la fecha sin paginar. Ignora limit y cursor.
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 99
+    Limit:
+      name: limit
+      in: query
+      required: false
+      description: Partidos por página. Solo sin matchday.
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 50
+        default: 20
+    Cursor:
+      name: cursor
+      in: query
+      required: false
+      description: Valor de next_cursor de la página anterior. Solo sin matchday.
+      schema:
+        type: string
+        maxLength: 512
+  schemas:
+    UploadRequest:
+      type: object
+      additionalProperties: false
+      required: [filename, content_type]
+      properties:
+        filename:
+          type: string
+          pattern: "^[A-Za-z0-9._-]{1,96}\\.csv$"
+          example: fecha-05.csv
+        content_type:
+          type: string
+          enum: [text/csv]
+    UploadResponse:
+      type: object
+      required: [upload_id, expires_in, upload]
+      properties:
+        upload_id:
+          type: string
+          format: uuid
+        expires_in:
+          type: integer
+          example: 300
+        upload:
+          type: object
+          required: [url, fields]
+          properties:
+            url:
+              type: string
+              format: uri
+            fields:
+              type: object
+              additionalProperties:
+                type: string
+    Match:
+      type: object
+      required: [match_id, competition, season, matchday, match_date, home_team, away_team, home_goals, away_goals, summary_status, summary]
+      properties:
+        match_id:
+          type: string
+          example: 3f9c1a0b2d4e5f60
+        competition:
+          type: string
+        season:
+          type: integer
+        matchday:
+          type: integer
+        match_date:
+          type: string
+          format: date
+        home_team:
+          type: string
+        away_team:
+          type: string
+        home_goals:
+          type: integer
+        away_goals:
+          type: integer
+        summary_status:
+          type: string
+          enum: [PENDING, READY, FAILED]
+        summary:
+          type: string
+          nullable: true
+          description: Solo tiene texto cuando summary_status es READY.
+    MatchesResponse:
+      type: object
+      required: [items, next_cursor]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Match"
+        next_cursor:
+          type: string
+          nullable: true
+    StandingRow:
+      type: object
+      required: [position, team, team_id, played, won, drawn, lost, goals_for, goals_against, goal_difference, points]
+      properties:
+        position:
+          type: integer
+        team:
+          type: string
+        team_id:
+          type: string
+        played:
+          type: integer
+        won:
+          type: integer
+        drawn:
+          type: integer
+        lost:
+          type: integer
+        goals_for:
+          type: integer
+        goals_against:
+          type: integer
+        goal_difference:
+          type: integer
+        points:
+          type: integer
+    StandingsResponse:
+      type: object
+      required: [competition, season, computed_at, items]
+      properties:
+        competition:
+          type: string
+        season:
+          type: integer
+        computed_at:
+          type: string
+          format: date-time
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/StandingRow"
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message, request_id]
+          properties:
+            code:
+              type: string
+              example: VALIDATION_ERROR
+            message:
+              type: string
+              description: Mensaje en español. Nunca incluye trazas.
+            request_id:
+              type: string
+  responses:
+    ValidationError:
+      description: Parámetro o cuerpo inválido
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    SeasonNotFound:
+      description: No hay tabla para esa competición y temporada
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    PayloadTooLarge:
+      description: El cuerpo supera 1 KB
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    DailyQuotaExceeded:
+      description: Se alcanzó la cuota diaria de subidas
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    InternalError:
+      description: Falla no controlada
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
