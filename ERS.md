@@ -39,8 +39,6 @@
 
 Construir una API de estadísticas de fútbol que se llena sola a partir de archivos CSV. El operador sube el CSV con los partidos de una fecha. El sistema valida los datos, guarda los partidos, genera un resumen por partido y mantiene la tabla de posiciones.
 
-El proyecto es una pieza de portfolio para postulaciones laborales. Tiene que demostrar diseño serverless en AWS, infraestructura como código con CDK en Python, despliegue con GitHub Actions sin claves de larga duración, pruebas automatizadas y control de costos.
-
 ### 1.2 Alcance de la versión 1
 
 La versión 1 debe incluir:
