@@ -1155,7 +1155,7 @@ Cuando termine el plan de 6 meses o se agoten los créditos, el costo pasa a ser
 | ID | Decisión | Estado | Consecuencia |
 |---|---|---|---|
 | D-01 | Dominio de la v1. | Resuelta el 2026-11-03: fútbol. | Si después se cambia a otro dominio, hay que parametrizar la regla de puntos 3-1-0 (RF-13). |
-| D-02 | Nombre del proyecto. | Resuelta como nombre de trabajo: `estadisticas-serverless`. | Un nombre definitivo para el portfolio se puede elegir hasta el primer despliegue. Cambia los prefijos de los recursos y el nombre de la carpeta. |
+| D-02 | Nombre del proyecto. | Resuelta como nombre de trabajo: `estadisticas-serverless`. | Un nombre definitivo se puede elegir hasta el primer despliegue. Cambia los prefijos de los recursos y el nombre de la carpeta. |
 | D-03 | Athena entra en la v1. | Resuelta el 2026-11-03: no entra. Es una etapa aparte. | La v1 no tiene catálogo Glue ni bucket de resultados. |
 | D-04 | El resumen con IA entra en la v1, y con qué proveedor. | Resuelta el 2026-11-03: no entra en la v1. El proveedor queda pendiente para la etapa 2. | La v1 usa solo plantilla (RF-09). La recomendación para la etapa 2 es Amazon Bedrock, porque todo queda en AWS. La alternativa es una API externa, sin créditos y con los datos fuera de AWS. |
 | D-05 | ¿Recalcular la tabla también al terminar cada ingesta válida, además del recálculo diario? | Propuesta, pendiente de aprobación. No bloquea la v1. | Si se aprueba, la ingesta invoca el recálculo de la temporada afectada al final (cambian 6.3 y RF-14). Evita el riesgo R-11. |
